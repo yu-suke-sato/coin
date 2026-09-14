@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>100円玉 コイン投げシミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #1a202c;
+            color: #e2e8f0;
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .coin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 2rem;
+            justify-items: center;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .coin-scene {
+            width: 120px;
+            height: 120px;
+            perspective: 1000px;
+        }
+
+        .coin-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 2.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+            border-radius: 50%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+
+        .coin-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f0f0f0 0%, #b0b0b0 50%, #dcdcdc 100%);
+            border: 4px solid #a0a0a0;
+            box-shadow: inset 0 0 0 2px #fff, inset 0 0 15px rgba(0,0,0,0.15);
+            color: #666;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+
+        .coin-back {
+            transform: rotateY(180deg);
+        }
+
+        .coin-text-top { font-size: 0.75rem; font-weight: bold; letter-spacing: 0.1em; margin-bottom: 5px; }
+        .coin-text-bottom { font-size: 0.7rem; font-weight: bold; margin-top: 5px; }
+        .coin-number { font-size: 3rem; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+        .coin-kanji { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
+
+        .sakura-icon {
+            width: 45px;
+            height: 45px;
+            fill: #777;
+            filter: drop-shadow(1px 1px 0px rgba(255,255,255,0.8)) drop-shadow(-1px -1px 0px rgba(0,0,0,0.3));
+        }
+
+        .is-flipping {
+            animation: jump 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes jump {
+            0% { top: 0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+            50% { top: -80px; box-shadow: 0 40px 25px -5px rgba(0, 0, 0, 0.4); }
+            100% { top: 0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* グラフ描画エリアの高さ確保 */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <header class="w-full flex justify-end p-4 absolute top-0 z-10 pointer-events-none">
+        <div class="flex items-center gap-3 bg-gray-800/80 p-3 rounded-xl border border-gray-700 shadow-lg pointer-events-auto backdrop-blur-sm">
+            <span class="text-sm font-medium text-gray-300 select-none">確率分布機能</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="featureToggle" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+            </label>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center py-16 relative px-4 w-full">
+        <h1 class="text-3xl font-bold mb-8 text-center text-white tracking-wider">
+            100円玉 コイン投げ
+        </h1>
+
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row gap-4 items-center justify-center mb-8 border border-gray-700 w-full max-w-md">
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
+                <label for="coinCount" class="text-lg font-medium text-gray-300">投げる枚数:</label>
+                <select id="coinCount" class="bg-gray-700 text-white text-lg rounded-lg px-4 py-2 outline-none border border-gray-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400">
+                    <option value="1">1枚</option>
+                    <option value="2">2枚</option>
+                    <option value="3">3枚</option>
+                    <option value="4">4枚</option>
+                    <option value="5">5枚</option>
+                    <option value="6">6枚</option>
+                    <option value="7">7枚</option>
+                    <option value="8">8枚</option>
+                    <option value="9">9枚</option>
+                    <option value="10" selected>10枚</option>
+                </select>
+            </div>
+            
+            <button id="tossBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform active:scale-95 text-lg">
+                投げる
+            </button>
+        </div>
+
+        <div class="mb-6 flex flex-col items-center w-full max-w-2xl">
+            <div class="text-center bg-gray-800 px-8 py-4 rounded-2xl border border-gray-700 min-w-[250px] shadow-lg">
+                <h2 class="text-sm text-gray-400 mb-2 font-semibold tracking-widest">結果</h2>
+                <div class="text-2xl font-bold flex justify-center gap-6">
+                    <span class="text-white">表: <span id="headsCount" class="text-blue-400 text-3xl">-</span> 枚</span>
+                    <span class="text-white">裏: <span id="tailsCount" class="text-pink-400 text-3xl">-</span> 枚</span>
+                </div>
+            </div>
+            
+            <div id="distBtnContainer" class="hidden mt-6">
+                <button id="distBtn" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-transform transform active:scale-95 text-md flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span id="distBtnText">確率分布を表示</span>
+                </button>
+            </div>
+
+            <div id="distChartContainer" class="hidden w-full mt-6 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl fade-in">
+                <h2 class="text-xl font-bold text-white mb-4 text-center">確率変数 X (表が出た枚数) の分布</h2>
+                <div class="chart-wrapper">
+                    <canvas id="distChart"></canvas>
+                </div>
+                <p class="text-center text-sm text-gray-400 mt-4">
+                    二項分布: P(X=k) = <sub>n</sub>C<sub>k</sub>(1/2)<sup>n</sup>
+                </p>
+            </div>
+        </div>
+
+        <div id="coinContainer" class="coin-grid pb-10">
+            <!-- コインはJavaScriptで動的に生成されます -->
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const featureToggle = document.getElementById('featureToggle');
+            const coinCountSelect = document.getElementById('coinCount');
+            const tossBtn = document.getElementById('tossBtn');
+            const distBtnContainer = document.getElementById('distBtnContainer');
+            const distBtn = document.getElementById('distBtn');
+            const distBtnText = document.getElementById('distBtnText');
+            const distChartContainer = document.getElementById('distChartContainer');
+            const coinContainer = document.getElementById('coinContainer');
+            const headsCountEl = document.getElementById('headsCount');
+            const tailsCountEl = document.getElementById('tailsCount');
+            
+            let isAnimating = false;
+            let chartInstance = null;
+            let tossCompleted = false; // コイン投げが完了しているかどうかのフラグ
+
+            const sakuraSVG = `
+                <svg class="sakura-icon" viewBox="0 0 100 100">
+                    <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" />
+                    <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" transform="rotate(72 50 50)" />
+                    <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" transform="rotate(144 50 50)" />
+                    <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" transform="rotate(216 50 50)" />
+                    <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" transform="rotate(288 50 50)" />
+                    <circle cx="50" cy="50" r="7" fill="#666" />
+                </svg>
+            `;
+
+            function createCoinElement() {
+                const scene = document.createElement('div');
+                scene.className = 'coin-scene';
+                
+                const inner = document.createElement('div');
+                inner.className = 'coin-inner';
+                inner.dataset.rotation = "0";
+
+                const front = document.createElement('div');
+                front.className = 'coin-face coin-front';
+                front.innerHTML = `
+                    <div class="coin-text-top">日本国</div>
+                    <div class="coin-number">100</div>
+                    <div class="coin-text-bottom">令和八年</div>
+                `;
+
+                const back = document.createElement('div');
+                back.className = 'coin-face coin-back';
+                back.innerHTML = `
+                    ${sakuraSVG}
+                    <div class="coin-kanji">百円</div>
+                `;
+
+                inner.appendChild(front);
+                inner.appendChild(back);
+                scene.appendChild(inner);
+
+                return scene;
+            }
+
+            function adjustCoinElements(targetCount) {
+                const currentCount = coinContainer.children.length;
+                if (targetCount > currentCount) {
+                    for (let i = 0; i < targetCount - currentCount; i++) {
+                        coinContainer.appendChild(createCoinElement());
+                    }
+                } else if (targetCount < currentCount) {
+                    for (let i = 0; i < currentCount - targetCount; i++) {
+                        coinContainer.removeChild(coinContainer.lastChild);
+                    }
+                }
+            }
+
+            function hideDistributionFeatures() {
+                distBtnContainer.classList.add('hidden');
+                distBtnContainer.classList.remove('fade-in');
+                distChartContainer.classList.add('hidden');
+                distBtnText.innerText = '確率分布を表示';
+            }
+
+            // トグルスイッチ切り替え時の処理
+            featureToggle.addEventListener('change', () => {
+                // オフにした時、または未実行状態の時は非表示にする
+                if (!featureToggle.checked || !tossCompleted) {
+                    hideDistributionFeatures();
+                } else if (featureToggle.checked && tossCompleted) {
+                    // 完了状態でオンにした場合はボタンを表示
+                    distBtnContainer.classList.remove('hidden');
+                    distBtnContainer.classList.add('fade-in');
+                }
+            });
+
+            // 枚数変更時はリセット
+            coinCountSelect.addEventListener('change', () => {
+                if (!isAnimating) {
+                    adjustCoinElements(parseInt(coinCountSelect.value, 10));
+                    headsCountEl.innerText = "-";
+                    tailsCountEl.innerText = "-";
+                    headsCountEl.classList.remove('animate-pulse');
+                    tailsCountEl.classList.remove('animate-pulse');
+                    tossCompleted = false;
+                    hideDistributionFeatures();
+                }
+            });
+
+            function tossCoins() {
+                if (isAnimating) return;
+                isAnimating = true;
+                tossCompleted = false;
+                
+                // UIリセット
+                hideDistributionFeatures();
+                
+                const count = parseInt(coinCountSelect.value, 10);
+                adjustCoinElements(count);
+
+                headsCountEl.innerText = "-";
+                tailsCountEl.innerText = "-";
+                headsCountEl.classList.remove('animate-pulse');
+                tailsCountEl.classList.remove('animate-pulse');
+
+                let heads = 0;
+                let tails = 0;
+                const coins = coinContainer.querySelectorAll('.coin-inner');
+                let maxDuration = 0;
+
+                coins.forEach((coin, index) => {
+                    const isHeads = Math.random() >= 0.5;
+                    if (isHeads) heads++;
+                    else tails++;
+
+                    const spins = 3 + Math.floor(Math.random() * 3);
+                    const extraDegrees = spins * 360;
+                    const resultDegrees = isHeads ? 0 : 180;
+
+                    let currentRot = parseFloat(coin.dataset.rotation || 0);
+                    let baseRot = currentRot - (currentRot % 360);
+                    let newRot = baseRot + extraDegrees + resultDegrees;
+
+                    if (newRot <= currentRot + 360) newRot += 360;
+
+                    coin.dataset.rotation = newRot;
+
+                    const delay = index * 100 + Math.random() * 150;
+                    maxDuration = Math.max(maxDuration, delay + 2500);
+
+                    setTimeout(() => {
+                        coin.classList.remove('is-flipping');
+                        void coin.offsetWidth; 
+                        coin.classList.add('is-flipping');
+                        coin.style.transform = `rotateY(${newRot}deg)`;
+                    }, delay);
+                });
+
+                setTimeout(() => {
+                    headsCountEl.innerText = heads;
+                    tailsCountEl.innerText = tails;
+                    headsCountEl.classList.add('animate-pulse');
+                    tailsCountEl.classList.add('animate-pulse');
+                    
+                    tossCompleted = true;
+                    isAnimating = false;
+
+                    // トグルスイッチがオンの場合のみボタンを表示
+                    if (featureToggle.checked) {
+                        distBtnContainer.classList.remove('hidden');
+                        distBtnContainer.classList.add('fade-in');
+                    }
+                }, maxDuration + 100);
+            }
+
+            function factorial(num) {
+                if (num <= 1) return 1;
+                let result = 1;
+                for (let i = 2; i <= num; i++) result *= i;
+                return result;
+            }
+
+            function combination(n, k) {
+                return factorial(n) / (factorial(k) * factorial(n - k));
+            }
+
+            function getBinomialDistribution(n) {
+                let labels = [];
+                let data = [];
+                for (let k = 0; k <= n; k++) {
+                    labels.push(k + "枚");
+                    let p = combination(n, k) / Math.pow(2, n);
+                    data.push(p);
+                }
+                return { labels, data };
+            }
+
+            function toggleDistributionChart() {
+                const isHidden = distChartContainer.classList.contains('hidden');
+                
+                if (isHidden) {
+                    distChartContainer.classList.remove('hidden');
+                    distBtnText.innerText = '確率分布を隠す';
+                    
+                    const n = parseInt(coinCountSelect.value, 10);
+                    const dist = getBinomialDistribution(n);
+                    
+                    const ctx = document.getElementById('distChart').getContext('2d');
+                    
+                    if (chartInstance) {
+                        chartInstance.destroy();
+                    }
+                    
+                    Chart.defaults.color = '#9ca3af'; 
+                    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+                    
+                    // Y軸の最大値を見やすく調整
+                    const maxProb = Math.max(...dist.data);
+                    const yMax = maxProb > 0.5 ? 1.0 : (maxProb > 0.3 ? 0.5 : 0.4);
+
+                    chartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dist.labels,
+                            datasets: [{
+                                label: '確率 P(X=k)',
+                                data: dist.data,
+                                backgroundColor: 'rgba(59, 130, 246, 0.7)', 
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: yMax,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return (value * 100).toFixed(0) + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return '確率: ' + (context.parsed.y * 100).toFixed(2) + '%';
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    distChartContainer.classList.add('hidden');
+                    distBtnText.innerText = '確率分布を表示';
+                }
+            }
+
+            tossBtn.addEventListener('click', tossCoins);
+            distBtn.addEventListener('click', toggleDistributionChart);
+
+            // 初期状態で10枚表示しておく
+            adjustCoinElements(10);
+        });
+    </script>
+</body>
+</html>
