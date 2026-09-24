@@ -6,6 +6,7 @@
     <title>100円玉 コイン投げシミュレーター</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         body {
             background-color: #1a202c;
@@ -17,22 +18,9 @@
             overflow-x: hidden;
         }
 
-        .coin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 2rem;
-            justify-items: center;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
         .coin-scene {
-            width: 120px;
-            height: 120px;
             perspective: 1000px;
+            margin: 0 auto;
         }
 
         .coin-inner {
@@ -42,7 +30,7 @@
             transition: transform 2.5s cubic-bezier(0.2, 0.8, 0.2, 1);
             transform-style: preserve-3d;
             border-radius: 50%;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.5);
         }
 
         .coin-face {
@@ -56,9 +44,9 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, #f0f0f0 0%, #b0b0b0 50%, #dcdcdc 100%);
-            border: 4px solid #a0a0a0;
-            box-shadow: inset 0 0 0 2px #fff, inset 0 0 15px rgba(0,0,0,0.15);
-            color: #666;
+            border: 3px solid #a0a0a0;
+            box-shadow: inset 0 0 0 2px #fff, inset 0 0 10px rgba(0,0,0,0.15);
+            color: #555;
             text-shadow: 1px 1px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.3);
             user-select: none;
         }
@@ -67,14 +55,7 @@
             transform: rotateY(180deg);
         }
 
-        .coin-text-top { font-size: 0.75rem; font-weight: bold; letter-spacing: 0.1em; margin-bottom: 5px; }
-        .coin-text-bottom { font-size: 0.7rem; font-weight: bold; margin-top: 5px; }
-        .coin-number { font-size: 3rem; font-weight: 900; line-height: 1; letter-spacing: -2px; }
-        .coin-kanji { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
-
         .sakura-icon {
-            width: 45px;
-            height: 45px;
             fill: #777;
             filter: drop-shadow(1px 1px 0px rgba(255,255,255,0.8)) drop-shadow(-1px -1px 0px rgba(0,0,0,0.3));
         }
@@ -84,31 +65,77 @@
         }
 
         @keyframes jump {
-            0% { top: 0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
-            50% { top: -80px; box-shadow: 0 40px 25px -5px rgba(0, 0, 0, 0.4); }
-            100% { top: 0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+            0% { top: 0; box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.5); }
+            50% { top: -60px; box-shadow: 0 30px 20px -4px rgba(0, 0, 0, 0.4); }
+            100% { top: 0; box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.5); }
         }
 
+        .coin-grid {
+            display: grid;
+            gap: 1.5rem;
+            justify-items: center;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Large coins (1-10 coins) */
+        .coin-grid[data-size="large"] {
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        }
+        .coin-grid[data-size="large"] .coin-scene { width: 110px; height: 110px; }
+        .coin-grid[data-size="large"] .coin-number { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+        .coin-grid[data-size="large"] .coin-kanji { font-size: 1.4rem; font-weight: bold; margin-top: 4px; }
+        .coin-grid[data-size="large"] .sakura-icon { width: 42px; height: 42px; }
+        .coin-grid[data-size="large"] .coin-text-top { font-size: 0.7rem; font-weight: bold; }
+        .coin-grid[data-size="large"] .coin-text-bottom { font-size: 0.65rem; font-weight: bold; }
+
+        /* Medium coins (11-30 coins) */
+        .coin-grid[data-size="medium"] {
+            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+            gap: 1rem;
+        }
+        .coin-grid[data-size="medium"] .coin-scene { width: 75px; height: 75px; }
+        .coin-grid[data-size="medium"] .coin-number { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+        .coin-grid[data-size="medium"] .coin-kanji { font-size: 0.9rem; font-weight: bold; margin-top: 2px; }
+        .coin-grid[data-size="medium"] .sakura-icon { width: 28px; height: 28px; }
+        .coin-grid[data-size="medium"] .coin-text-top { font-size: 0.5rem; font-weight: bold; }
+        .coin-grid[data-size="medium"] .coin-text-bottom { font-size: 0.45rem; font-weight: bold; }
+
+        /* Small coins (31-100 coins) */
+        .coin-grid[data-size="small"] {
+            grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+            gap: 0.6rem;
+        }
+        .coin-grid[data-size="small"] .coin-scene { width: 46px; height: 46px; }
+        .coin-grid[data-size="small"] .coin-face { border-width: 2px; }
+        .coin-grid[data-size="small"] .coin-number { font-size: 1.15rem; font-weight: 900; line-height: 1; }
+        .coin-grid[data-size="small"] .coin-kanji { font-size: 0.7rem; font-weight: bold; }
+        .coin-grid[data-size="small"] .sakura-icon { width: 18px; height: 18px; }
+        .coin-grid[data-size="small"] .coin-text-top, 
+        .coin-grid[data-size="small"] .coin-text-bottom { display: none; }
+
         .fade-in {
-            animation: fadeIn 0.5s ease-in-out forwards;
+            animation: fadeIn 0.4s ease-in-out forwards;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* グラフ描画エリアの高さ確保 */
+
         .chart-wrapper {
             position: relative;
             width: 100%;
-            height: 300px;
+            height: 320px;
         }
     </style>
 </head>
 <body>
     <header class="w-full flex justify-end p-4 absolute top-0 z-10 pointer-events-none">
-        <div class="flex items-center gap-3 bg-gray-800/80 p-3 rounded-xl border border-gray-700 shadow-lg pointer-events-auto backdrop-blur-sm">
+        <div class="flex items-center gap-3 bg-gray-800/90 p-3 rounded-xl border border-gray-700 shadow-lg pointer-events-auto backdrop-blur-sm">
             <span class="text-sm font-medium text-gray-300 select-none">確率分布機能</span>
             <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="featureToggle" class="sr-only peer">
@@ -118,43 +145,43 @@
     </header>
 
     <main class="flex-grow flex flex-col items-center py-16 relative px-4 w-full">
-        <h1 class="text-3xl font-bold mb-8 text-center text-white tracking-wider">
+        <h1 class="text-3xl sm:text-4xl font-bold mb-6 text-center text-white tracking-wider">
             100円玉 コイン投げ
         </h1>
 
-        <div class="bg-gray-800 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row gap-4 items-center justify-center mb-8 border border-gray-700 w-full max-w-md">
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-xl flex flex-col gap-4 items-center justify-center mb-8 border border-gray-700 w-full max-w-lg">
+            <div class="flex flex-wrap items-center gap-3 w-full justify-center">
                 <label for="coinCount" class="text-lg font-medium text-gray-300">投げる枚数:</label>
-                <select id="coinCount" class="bg-gray-700 text-white text-lg rounded-lg px-4 py-2 outline-none border border-gray-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400">
-                    <option value="1">1枚</option>
-                    <option value="2">2枚</option>
-                    <option value="3">3枚</option>
-                    <option value="4">4枚</option>
-                    <option value="5">5枚</option>
-                    <option value="6">6枚</option>
-                    <option value="7">7枚</option>
-                    <option value="8">8枚</option>
-                    <option value="9">9枚</option>
-                    <option value="10" selected>10枚</option>
+                <select id="coinCount" class="bg-gray-700 text-white text-lg rounded-lg px-4 py-2 outline-none border border-gray-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-400 min-w-[100px]">
+                    <!-- JSで1〜100を生成します -->
                 </select>
+                <span class="text-gray-400 text-sm">枚</span>
+            </div>
+
+            <!-- クイック選択ボタン -->
+            <div class="flex gap-2 justify-center w-full">
+                <button type="button" class="preset-btn bg-gray-700 hover:bg-gray-600 text-xs text-gray-300 px-3 py-1 rounded-md border border-gray-600 transition" data-value="1">1枚</button>
+                <button type="button" class="preset-btn bg-gray-700 hover:bg-gray-600 text-xs text-gray-300 px-3 py-1 rounded-md border border-gray-600 transition" data-value="10">10枚</button>
+                <button type="button" class="preset-btn bg-gray-700 hover:bg-gray-600 text-xs text-gray-300 px-3 py-1 rounded-md border border-gray-600 transition" data-value="50">50枚</button>
+                <button type="button" class="preset-btn bg-gray-700 hover:bg-gray-600 text-xs text-gray-300 px-3 py-1 rounded-md border border-gray-600 transition" data-value="100">100枚</button>
             </div>
             
-            <button id="tossBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform active:scale-95 text-lg">
+            <button id="tossBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform transform active:scale-95 text-lg mt-1">
                 投げる
             </button>
         </div>
 
         <div class="mb-6 flex flex-col items-center w-full max-w-2xl">
-            <div class="text-center bg-gray-800 px-8 py-4 rounded-2xl border border-gray-700 min-w-[250px] shadow-lg">
+            <div class="text-center bg-gray-800 px-8 py-4 rounded-2xl border border-gray-700 min-w-[280px] shadow-lg">
                 <h2 class="text-sm text-gray-400 mb-2 font-semibold tracking-widest">結果</h2>
-                <div class="text-2xl font-bold flex justify-center gap-6">
+                <div class="text-2xl font-bold flex justify-center gap-8">
                     <span class="text-white">表: <span id="headsCount" class="text-blue-400 text-3xl">-</span> 枚</span>
                     <span class="text-white">裏: <span id="tailsCount" class="text-pink-400 text-3xl">-</span> 枚</span>
                 </div>
             </div>
             
             <div id="distBtnContainer" class="hidden mt-6">
-                <button id="distBtn" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-transform transform active:scale-95 text-md flex items-center gap-2">
+                <button id="distBtn" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-transform transform active:scale-95 text-md flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
@@ -163,17 +190,34 @@
             </div>
 
             <div id="distChartContainer" class="hidden w-full mt-6 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl fade-in">
-                <h2 class="text-xl font-bold text-white mb-4 text-center">確率変数 X (表が出た枚数) の分布</h2>
+                <h2 class="text-xl font-bold text-white mb-6 text-center">確率変数 X (表が出た枚数) の分布</h2>
+                
+                <!-- 統計データ表示領域 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-700/50 p-4 rounded-xl border border-gray-600 text-center">
+                        <div class="text-xs text-gray-400 mb-1 font-semibold">期待値 E[X]</div>
+                        <div id="statExpected" class="text-2xl font-bold text-blue-400">-</div>
+                    </div>
+                    <div class="bg-gray-700/50 p-4 rounded-xl border border-gray-600 text-center">
+                        <div class="text-xs text-gray-400 mb-1 font-semibold">分散 V[X]</div>
+                        <div id="statVariance" class="text-2xl font-bold text-green-400">-</div>
+                    </div>
+                    <div class="bg-gray-700/50 p-4 rounded-xl border border-gray-600 text-center">
+                        <div class="text-xs text-gray-400 mb-1 font-semibold">標準偏差 σ[X]</div>
+                        <div id="statStdDev" class="text-2xl font-bold text-yellow-400">-</div>
+                    </div>
+                </div>
+
                 <div class="chart-wrapper">
                     <canvas id="distChart"></canvas>
                 </div>
-                <p class="text-center text-sm text-gray-400 mt-4">
-                    二項分布: P(X=k) = <sub>n</sub>C<sub>k</sub>(1/2)<sup>n</sup>
+                <p class="text-center text-xs text-gray-400 mt-4">
+                    二項分布: B(<span id="distNLabel">10</span>, 0.5) &nbsp;|&nbsp; P(X=k) = <sub>n</sub>C<sub>k</sub> (1/2)<sup>n</sup>
                 </p>
             </div>
         </div>
 
-        <div id="coinContainer" class="coin-grid pb-10">
+        <div id="coinContainer" class="coin-grid pb-12" data-size="large">
             <!-- コインはJavaScriptで動的に生成されます -->
         </div>
     </main>
@@ -187,14 +231,29 @@
             const distBtn = document.getElementById('distBtn');
             const distBtnText = document.getElementById('distBtnText');
             const distChartContainer = document.getElementById('distChartContainer');
+            const distNLabel = document.getElementById('distNLabel');
             const coinContainer = document.getElementById('coinContainer');
             const headsCountEl = document.getElementById('headsCount');
             const tailsCountEl = document.getElementById('tailsCount');
             
+            const statExpected = document.getElementById('statExpected');
+            const statVariance = document.getElementById('statVariance');
+            const statStdDev = document.getElementById('statStdDev');
+            
             let isAnimating = false;
             let chartInstance = null;
-            let tossCompleted = false; // コイン投げが完了しているかどうかのフラグ
+            let tossCompleted = false;
 
+            // 1から100までの選択肢を生成
+            for (let i = 1; i <= 100; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = i;
+                if (i === 10) opt.selected = true;
+                coinCountSelect.appendChild(opt);
+            }
+
+            // 桜のSVGアイコン
             const sakuraSVG = `
                 <svg class="sakura-icon" viewBox="0 0 100 100">
                     <path d="M50 20 C60 5, 85 10, 80 35 C78 45, 60 48, 50 55 C40 48, 22 45, 20 35 C15 10, 40 5, 50 20 Z" />
@@ -237,6 +296,15 @@
             }
 
             function adjustCoinElements(targetCount) {
+                // 枚数に応じてグリッドのサイズ属性を変更
+                if (targetCount <= 10) {
+                    coinContainer.setAttribute('data-size', 'large');
+                } else if (targetCount <= 30) {
+                    coinContainer.setAttribute('data-size', 'medium');
+                } else {
+                    coinContainer.setAttribute('data-size', 'small');
+                }
+
                 const currentCount = coinContainer.children.length;
                 if (targetCount > currentCount) {
                     for (let i = 0; i < targetCount - currentCount; i++) {
@@ -256,37 +324,11 @@
                 distBtnText.innerText = '確率分布を表示';
             }
 
-            // トグルスイッチ切り替え時の処理
-            featureToggle.addEventListener('change', () => {
-                // オフにした時、または未実行状態の時は非表示にする
-                if (!featureToggle.checked || !tossCompleted) {
-                    hideDistributionFeatures();
-                } else if (featureToggle.checked && tossCompleted) {
-                    // 完了状態でオンにした場合はボタンを表示
-                    distBtnContainer.classList.remove('hidden');
-                    distBtnContainer.classList.add('fade-in');
-                }
-            });
-
-            // 枚数変更時はリセット
-            coinCountSelect.addEventListener('change', () => {
-                if (!isAnimating) {
-                    adjustCoinElements(parseInt(coinCountSelect.value, 10));
-                    headsCountEl.innerText = "-";
-                    tailsCountEl.innerText = "-";
-                    headsCountEl.classList.remove('animate-pulse');
-                    tailsCountEl.classList.remove('animate-pulse');
-                    tossCompleted = false;
-                    hideDistributionFeatures();
-                }
-            });
-
             function tossCoins() {
                 if (isAnimating) return;
                 isAnimating = true;
                 tossCompleted = false;
                 
-                // UIリセット
                 hideDistributionFeatures();
                 
                 const count = parseInt(coinCountSelect.value, 10);
@@ -301,6 +343,10 @@
                 let tails = 0;
                 const coins = coinContainer.querySelectorAll('.coin-inner');
                 let maxDuration = 0;
+
+                // 枚数に応じてディレイを短縮してスムーズにアニメーション
+                const delayStep = count <= 10 ? 80 : (count <= 30 ? 30 : 12);
+                const randomJitter = count <= 30 ? 100 : 40;
 
                 coins.forEach((coin, index) => {
                     const isHeads = Math.random() >= 0.5;
@@ -319,7 +365,7 @@
 
                     coin.dataset.rotation = newRot;
 
-                    const delay = index * 100 + Math.random() * 150;
+                    const delay = index * delayStep + Math.random() * randomJitter;
                     maxDuration = Math.max(maxDuration, delay + 2500);
 
                     setTimeout(() => {
@@ -339,7 +385,6 @@
                     tossCompleted = true;
                     isAnimating = false;
 
-                    // トグルスイッチがオンの場合のみボタンを表示
                     if (featureToggle.checked) {
                         distBtnContainer.classList.remove('hidden');
                         distBtnContainer.classList.add('fade-in');
@@ -347,25 +392,23 @@
                 }, maxDuration + 100);
             }
 
-            function factorial(num) {
-                if (num <= 1) return 1;
-                let result = 1;
-                for (let i = 2; i <= num; i++) result *= i;
-                return result;
-            }
-
-            function combination(n, k) {
-                return factorial(n) / (factorial(k) * factorial(n - k));
-            }
-
+            // 漸化式を用いた高精度二項分布計算 (n=100でもオーバーフローなし)
             function getBinomialDistribution(n) {
                 let labels = [];
                 let data = [];
-                for (let k = 0; k <= n; k++) {
+                
+                // P(X=0) = (0.5)^n
+                let p = Math.pow(0.5, n);
+                labels.push("0枚");
+                data.push(p);
+
+                // P(X=k) = P(X=k-1) * (n - k + 1) / k
+                for (let k = 1; k <= n; k++) {
+                    p = p * (n - k + 1) / k;
                     labels.push(k + "枚");
-                    let p = combination(n, k) / Math.pow(2, n);
                     data.push(p);
                 }
+
                 return { labels, data };
             }
 
@@ -377,8 +420,18 @@
                     distBtnText.innerText = '確率分布を隠す';
                     
                     const n = parseInt(coinCountSelect.value, 10);
-                    const dist = getBinomialDistribution(n);
+                    distNLabel.innerText = n;
                     
+                    // 統計量の計算 (二項分布 B(n, 0.5))
+                    const expectedValue = n * 0.5;
+                    const variance = n * 0.25;
+                    const stdDev = Math.sqrt(variance);
+                    
+                    statExpected.innerText = expectedValue.toFixed(2);
+                    statVariance.innerText = variance.toFixed(2);
+                    statStdDev.innerText = stdDev.toFixed(2);
+                    
+                    const dist = getBinomialDistribution(n);
                     const ctx = document.getElementById('distChart').getContext('2d');
                     
                     if (chartInstance) {
@@ -387,10 +440,6 @@
                     
                     Chart.defaults.color = '#9ca3af'; 
                     Chart.defaults.font.family = "'Inter', 'Helvetica Neue', Arial, sans-serif";
-                    
-                    // Y軸の最大値を見やすく調整
-                    const maxProb = Math.max(...dist.data);
-                    const yMax = maxProb > 0.5 ? 1.0 : (maxProb > 0.3 ? 0.5 : 0.4);
 
                     chartInstance = new Chart(ctx, {
                         type: 'bar',
@@ -402,19 +451,29 @@
                                 backgroundColor: 'rgba(59, 130, 246, 0.7)', 
                                 borderColor: 'rgba(59, 130, 246, 1)',
                                 borderWidth: 1,
-                                borderRadius: 4
+                                borderRadius: n > 40 ? 1 : 3
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
+                                x: {
+                                    ticks: {
+                                        // 枚数が多い場合は目盛り表示を自動スキップしてすっきり見せる
+                                        autoSkip: true,
+                                        maxRotation: 0,
+                                        maxTicksLimit: n > 30 ? 15 : n + 1
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
                                 y: {
                                     beginAtZero: true,
-                                    max: yMax,
                                     ticks: {
                                         callback: function(value) {
-                                            return (value * 100).toFixed(0) + '%';
+                                            return (value * 100).toFixed(n > 30 ? 1 : 0) + '%';
                                         }
                                     }
                                 }
@@ -423,7 +482,8 @@
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
-                                            return '確率: ' + (context.parsed.y * 100).toFixed(2) + '%';
+                                            const pct = (context.parsed.y * 100);
+                                            return '確率: ' + (pct < 0.01 && pct > 0 ? '<0.01%' : pct.toFixed(2) + '%');
                                         }
                                     }
                                 },
@@ -439,10 +499,41 @@
                 }
             }
 
+            featureToggle.addEventListener('change', () => {
+                if (!featureToggle.checked || !tossCompleted) {
+                    hideDistributionFeatures();
+                } else if (featureToggle.checked && tossCompleted) {
+                    distBtnContainer.classList.remove('hidden');
+                    distBtnContainer.classList.add('fade-in');
+                }
+            });
+
+            coinCountSelect.addEventListener('change', () => {
+                if (!isAnimating) {
+                    adjustCoinElements(parseInt(coinCountSelect.value, 10));
+                    headsCountEl.innerText = "-";
+                    tailsCountEl.innerText = "-";
+                    headsCountEl.classList.remove('animate-pulse');
+                    tailsCountEl.classList.remove('animate-pulse');
+                    tossCompleted = false;
+                    hideDistributionFeatures();
+                }
+            });
+
+            // クイックプリセットボタンのクリックイベント
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (isAnimating) return;
+                    const val = e.target.getAttribute('data-value');
+                    coinCountSelect.value = val;
+                    coinCountSelect.dispatchEvent(new Event('change'));
+                });
+            });
+
             tossBtn.addEventListener('click', tossCoins);
             distBtn.addEventListener('click', toggleDistributionChart);
 
-            // 初期状態で10枚表示しておく
+            // 初期状態で10枚表示
             adjustCoinElements(10);
         });
     </script>
